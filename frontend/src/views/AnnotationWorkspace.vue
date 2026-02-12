@@ -354,7 +354,13 @@
       <!-- Two-column layout for desktop, single column for mobile -->
       <div class="flex flex-col lg:flex-row">
         <!-- Conversation (full width mobile, 60% desktop) -->
-        <div class="w-full lg:w-[60%] px-6 py-8 pb-20 lg:pb-8" ref="conversationContainerEl">
+        <div 
+          :class="[
+            'w-full px-6 py-8 pb-20 lg:pb-8',
+            hasAnyAnnotations ? 'lg:w-[60%]' : 'lg:w-full'
+          ]" 
+          ref="conversationContainerEl"
+        >
           <MessageList
             v-if="messages.length > 0"
             :messages="messages"
@@ -397,7 +403,10 @@
         </div>
 
         <!-- Annotation Margin (desktop only - mobile uses inline comments) -->
-        <div class="hidden lg:block lg:w-[40%] relative">
+        <div 
+          v-if="hasAnyAnnotations"
+          class="hidden lg:block lg:w-[40%] relative"
+        >
           <AnnotationMargin
             :annotations="marginAnnotations"
             :vertical-bars="verticalBars"
@@ -903,7 +912,6 @@ const annotatedMessageIds = computed(() => {
   return ids
 })
 
-
 onMounted(async () => {
   window.addEventListener('resize', checkMobile)
   document.addEventListener('click', handleDocumentClick)
@@ -1246,9 +1254,10 @@ function handleAddCommentToMessage(messageId: string) {
     }
   } else {
     // On desktop, position to the right
-  commentInputPosition.value = {
-    x: rect.right + 10,
-    y: rect.top
+    const marginStart = window.innerWidth * 0.6 // 60% is where conversation ends
+    commentInputPosition.value = {
+      x: marginStart + 20,
+      y: rect.top
     }
   }
   
@@ -2400,6 +2409,20 @@ const marginAnnotations = computed<MarginAnnotation[]>(() => {
 // Removed inlineAnnotations - now using margin annotations on all screen sizes
 
 // Annotations are now created directly, no form needed
+
+// Check if there are any annotations to display
+const hasAnyAnnotations = computed(() => {
+  const hasAny = marginAnnotations.value.length > 0 || showCommentInput.value
+  return hasAny
+})
+
+watch(marginAnnotations, (newVal) => {
+  console.log('marginAnnotations changed:', newVal.length, newVal)
+}, { deep: true })
+
+watch(hasAnyAnnotations, (newVal) => {
+  console.log('hasAnyAnnotations changed:', newVal)
+})
 
 function cancelCommentForm() {
   showCommentForm.value = false
